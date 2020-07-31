@@ -1,7 +1,7 @@
 <!--
 title: Serverless Framework - AWS Lambda Events - Websocket
 menuText: Websocket
-menuOrder: 2
+menuOrder: 3
 description: Setting up AWS Websockets with AWS Lambda via the Serverless Framework
 layout: Doc
 -->
@@ -43,6 +43,18 @@ functions:
     events:
       - websocket:
           route: $disconnect
+```
+
+This code will setup a [RouteResponse](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-api-route-response.html), enabling you to respond to websocket messages by using the `body` parameter of your handler's callback response:
+
+```yml
+functions:
+  helloHandler:
+    handler: handler.helloHandler
+    events:
+      - websocket:
+          route: hello
+          routeResponseSelectionExpression: $default
 ```
 
 ## Routes
@@ -195,6 +207,30 @@ module.exports.defaultHandler = async (event, context) => {
 
   return {
     statusCode: 200,
+  };
+};
+```
+
+## Respond to a ws-client message
+
+To respond to a websocket message from your handler function, [Route Responses](https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-websocket-api-route-response.html) can be used. Set the `routeResponseSelectionExpression` option to enable this. This option allows you to respond to a websocket message using the `body` parameter.
+
+```yml
+functions:
+  sayHelloHandler:
+    handler: handler.sayHello
+    events:
+      - websocket:
+          route: hello
+          routeResponseSelectionExpression: $default
+```
+
+```js
+module.exports.helloHandler = async (event, context) => {
+  const body = JSON.parse(event.body);
+  return {
+    statusCode: 200,
+    body: `Hello, ${body.name}`,
   };
 };
 ```

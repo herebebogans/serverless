@@ -17,25 +17,53 @@ menuItems:
   - {menuText: Tencent Guide , path: /framework/docs/providers/tencent/guide/quick-start}
 -->
 
-# Getting Started with the Serverless Framework and AWS
+# Get started with Serverless Framework Open Source & AWS
 
-First things first, let's get the Serverless Framework open source CLI installed on your machine.
+Getting started with Serverless Framework’s Open Source CLI and AWS takes only a few minutes. Install as a standalone binary, or with npm.
 
-## Installing as a standalone binary
+## Install as a standalone binary
 
-_(no Node.js or npm installation required)_
+### MacOS/Linux
 
-### macOS & Linux
-
-Run following code in your terminal:
+Run this command in your terminal:
 
 ```bash
 curl -o- -L https://slss.io/install | bash
 ```
 
-_**Note**: To use newly installed binary you need to open another terminal window._
+Then open another terminal window to run `serverless` program.
 
-To upgrade already installed version:
+### Windows
+
+Install with [Chocolatey](https://chocolatey.org/):
+
+```bash
+choco install serverless
+```
+
+### via npm
+
+_Note: If you don’t already have [Node](https://nodejs.org/en/download/package-manager/) on your machine, you’ll need to install it first. We suggest using the latest LTS version of NodeJS._
+
+Install the serverless CLI:
+
+```bash
+npm install -g serverless
+```
+
+## Initial setup
+
+Run below command and follow the prompts
+
+```bash
+serverless
+```
+
+_Note: Users in China are presented with setup centered around chinese [Tencent](https://intl.cloud.tencent.com/) provider. If you're based in China and prefer to be presented with steps as outside of China ensure `SERVERLESS_PLATFORM_VENDOR=aws` in your environment_
+
+## Upgrade
+
+### MacOS/Linux
 
 ```bash
 serverless upgrade
@@ -43,43 +71,28 @@ serverless upgrade
 
 ### Windows
 
-Install with [Chocolatey](https://chocolatey.org/) package manager:
-
-```bash
-choco install serverless
-```
-
-To upgrade already installed version:
-
 ```bash
 choco upgrade serverless
 ```
 
-## Installing via npm
+### via npm
 
 ```bash
-# Install the serverless cli
-npm install -g serverless
-
-# Or, update the serverless cli from a previous version
 npm update -g serverless
 ```
 
-If you don’t already have [Node 6](https://nodejs.org/en/download/package-manager/) or higher on your machine, you’ll need to do that first.
+## Set up your free Pro account
 
-## Serverless Dashboard
+Learn more about [Serverless Framework Pro](https://serverless.com/pro/) and [sign up for free](https://app.serverless.com).
 
-If you already registered for a [Serverless Framework Dashboard](https://dashboard.serverless.com) account, login to your account from the CLI.
+Once you’ve signed up for Pro, login to your Pro dashboard from the CLI:
 
 ```bash
 serverless login
 ```
 
-Once you have the Serverless Framework installed, simply run the `serverless` command and follow the prompts. In no time you will have deployed your first serverless app using the Serverless Framework [CLI](./providers/) and configured your [Serverless Framework Dashboard](./dashboard/) account to automatically monitor your serverless app, generate alerts, and much more. If you already have an existing Serverless Framework Dashboard account, you'll be prompted for your organization and application as well.
+You can either add a new service in your dashboard, or with the CLI, using the command:
 
 ```bash
-# Create and deploy a new service/project
 serverless
 ```
-
-Want to try out the Serverless Framework on a different cloud provider? Click on any of the cloud provider quick start guides, to the left, to get started.

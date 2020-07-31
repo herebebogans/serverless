@@ -11,6 +11,8 @@ module.exports = {
     '../../lib/plugins/aws/package/lib/*.json',
     // Service templates
     '../../lib/plugins/create/templates',
+    // Local invocation artifacts
+    '../../lib/plugins/aws/invokeLocal/runtimeWrappers',
     // Dashboard policies
     '../../node_modules/@serverless/enterprise-plugin/lib/safeguards/policies',
     // Dashboard wrappers

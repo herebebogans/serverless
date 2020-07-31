@@ -22,11 +22,12 @@ layout: Doc
     - [Enabling CORS](#enabling-cors)
     - [HTTP Endpoints with `AWS_IAM` Authorizers](#http-endpoints-with-aws_iam-authorizers)
     - [HTTP Endpoints with Custom Authorizers](#http-endpoints-with-custom-authorizers)
+    - [HTTP Endpoints with `operationId`](#http-endpoints-with-operationId)
     - [Catching Exceptions In Your Lambda Function](#catching-exceptions-in-your-lambda-function)
     - [Setting API keys for your Rest API](#setting-api-keys-for-your-rest-api)
     - [Configuring endpoint types](#configuring-endpoint-types)
     - [Request Parameters](#request-parameters)
-    - [Request Schema Validation](#request-schema-validation)
+    - [Request Schema Validators](#request-schema-validators)
     - [Setting source of API key for metering requests](#setting-source-of-api-key-for-metering-requests)
   - [Lambda Integration](#lambda-integration)
     - [Example "LAMBDA" event (before customization)](#example-lambda-event-before-customization)
@@ -52,6 +53,7 @@ layout: Doc
   - [Resource Policy](#resource-policy)
   - [Compression](#compression)
   - [Binary Media Types](#binary-media-types)
+  - [Detailed CloudWatch Metrics](#detailed-cloudwatch-metrics)
   - [AWS X-Ray Tracing](#aws-x-ray-tracing)
   - [Tags / Stack Tags](#tags--stack-tags)
   - [Logs](#logs)
@@ -284,6 +286,8 @@ Please note that since you can't send multiple values for [Access-Control-Allow-
 
 Configuring the `cors` property sets [Access-Control-Allow-Origin](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin), [Access-Control-Allow-Headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers), [Access-Control-Allow-Methods](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods),[Access-Control-Allow-Credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials) headers in the CORS preflight response.
 
+If you use the lambda integration, the Access-Control-Allow-Origin and Access-Control-Allow-Credentials will also be provided to the method and integration responses.
+
 Please note that the [Access-Control-Allow-Credentials](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials)-Header is omitted when not explicitly set to `true`.
 
 To enable the `Access-Control-Max-Age` preflight response header, set the `maxAge` property in the `cors` object:
@@ -324,6 +328,20 @@ functions:
               - X-Amz-User-Agent
             allowCredentials: false
             cacheControl: 'max-age=600, s-maxage=600, proxy-revalidate' # Caches on browser and proxy for 10 minutes and doesnt allow proxy to serve out of date content
+```
+
+CORS header accepts single value too
+
+```yml
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: hello
+          method: get
+          cors:
+            headers: '*'
 ```
 
 If you want to use CORS with the lambda-proxy integration, remember to include the `Access-Control-Allow-*` headers in your headers object, like this:
@@ -444,10 +462,31 @@ functions:
           method: post
           authorizer:
             arn: xxx:xxx:Lambda-Name
+            managedExternally: false
             resultTtlInSeconds: 0
             identitySource: method.request.header.Authorization
             identityValidationExpression: someRegex
 ```
+
+If permissions for the Authorizer function are managed externally (for example, if the Authorizer function exists
+in a different AWS account), you can skip creating the permission for the function by setting `managedExternally: true`,
+as shown in the following example:
+
+```yml
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          path: posts/create
+          method: post
+          authorizer:
+            arn: xxx:xxx:Lambda-Name
+            managedExternally: true
+```
+
+**IMPORTANT NOTE**: The permission allowing the authorizer function to be called by API Gateway must exist
+before deploying the stack, otherwise deployment will fail.
 
 You can also use the Request Type Authorizer by setting the `type` property. In this case, your `identitySource` could contain multiple entries for your policy cache. The default `type` is 'token'.
 
@@ -507,6 +546,47 @@ functions:
               - nickname
 ```
 
+If you are creating the Cognito User Pool in the `resources` section of the same template, you can refer to the ARN using the `Fn::GetAtt` attribute from CloudFormation. To do so, you _must_ give your authorizer a name and specify a type of `COGNITO_USER_POOLS`:
+
+```yml
+functions:
+  create:
+    handler: posts.create
+    events:
+      - http:
+          path: posts/create
+          method: post
+          integration: lambda
+          authorizer:
+            name: MyAuthorizer
+            type: COGNITO_USER_POOLS
+            arn:
+              Fn::GetAtt:
+                - CognitoUserPool
+                - Arn
+---
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: 'AWS::Cognito::UserPool'
+      Properties: ...
+```
+
+### HTTP Endpoints with `operationId`
+
+Include `operationId` when you want to provide a name for the method endpoint. This will set `OperationName` inside `AWS::ApiGateway::Method` accordingly. One common use case for this is customizing method names in some code generators (e.g., swagger).
+
+```yml
+functions:
+  create:
+    handler: users.create
+    events:
+      - http:
+          path: users/create
+          method: post
+          operationId: createUser
+```
+
 ### Using asynchronous integration
 
 Use `async: true` when integrating a lambda function using [event invocation](https://docs.aws.amazon.com/lambda/latest/dg/API_Invoke.html#SSS-Invoke-request-InvocationType). This lets API Gateway to return immediately with a 200 status code while the lambda continues running. If not otherwise specified integration type will be `AWS`.
@@ -553,6 +633,7 @@ provider:
       value: myThirdKeyValue
     - value: myFourthKeyValue # let cloudformation name the key (recommended when setting api key value)
       description: Api key description # Optional
+      customerId: A string that will be set as the customerID for the key # Optional
   usagePlan:
     quota:
       limit: 5000
@@ -634,6 +715,24 @@ functions:
           method: get
 ```
 
+API Gateway also supports the association of VPC endpoints if you have an API Gateway REST API using the PRIVATE endpoint configuration. This feature simplifies the invocation of a private API through the generation of the following AWS Route 53 alias:
+
+```
+https://<rest_api_id>-<vpc_endpoint_id>.execute-api.<aws_region>.amazonaws.com
+```
+
+Here's an example configuration:
+
+```yml
+service: my-service
+provider:
+  name: aws
+  endpointType: PRIVATE
+  vpcEndpointIds:
+    - vpce-123
+    - vpce-456
+```
+
 ### Request Parameters
 
 To pass optional and required parameters to your functions, so you can use them in API Gateway tests and SDK generation, marking them as `true` will make them required, `false` will make them optional.
@@ -671,6 +770,28 @@ functions:
               paths:
                 id: true
 ```
+
+To map different values for request parameters, define the `required` and `mappedValue` properties of the request parameter.
+
+```yml
+functions:
+  create:
+    handler: posts.post_detail
+    events:
+      - http:
+          path: posts/{id}
+          method: get
+          request:
+            parameters:
+              paths:
+                id: true
+              headers:
+                custom-header:
+                  required: true
+                  mappedValue: context.requestId
+```
+
+For a list of acceptable values, see the [AWS Documentation](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html)
 
 ### Request Schema Validators
 
@@ -1496,7 +1617,7 @@ provider:
 
 In your Lambda function you need to ensure that the correct `content-type` header is set. Furthermore you might want to return the response body in base64 format.
 
-To convert the request or response payload, you can set the [contentHandling](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html) property.
+To convert the request or response payload, you can set the [contentHandling](https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-payload-encodings-workflow.html) property (if set, the response contentHandling property will be passed to integration responses with 2XXs method response statuses).
 
 ```yml
 functions:
@@ -1510,6 +1631,16 @@ functions:
             contentHandling: CONVERT_TO_TEXT
           response:
             contentHandling: CONVERT_TO_TEXT
+```
+
+## Detailed CloudWatch Metrics
+
+Use the following configuration to enable detailed CloudWatch Metrics:
+
+```yml
+provider:
+  apiGateway:
+    metrics: true
 ```
 
 ## AWS X-Ray Tracing
@@ -1554,6 +1685,30 @@ provider:
 
 The log streams will be generated in a dedicated log group which follows the naming schema `/aws/api-gateway/{service}-{stage}`.
 
+To be able to write logs, API Gateway [needs a CloudWatch role configured](https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-logging.html). This setting is per region, shared by all the APIs. There are three approaches for handling it:
+
+- Let Serverless create and assign an IAM role for you (default behavior). Note that since this is a shared setting, this role is not removed when you remove the deployment.
+- Let Serverless assign an existing IAM role that you created before the deployment, if not already assigned:
+
+  ```yml
+  # serverless.yml
+  provider:
+    logs:
+      restApi:
+        role: arn:aws:iam::123456:role
+  ```
+
+- Do not let Serverless manage the CloudWatch role configuration. In this case, you would create and assign the IAM role yourself, e.g. in a separate "account setup" deployment:
+
+  ```yml
+  provider:
+    logs:
+      restApi:
+        roleManagedExternally: true # disables automatic role creation/checks done by Serverless
+  ```
+
+**Note:** Serverless configures the API Gateway CloudWatch role setting using a custom resource lambda function. If you're using `cfnRole` to specify a limited-access IAM role for your serverless deployment, the custom resource lambda will assume this role during execution.
+
 By default, API Gateway access logs will use the following format:
 
 ```
@@ -1583,3 +1738,37 @@ provider:
 ```
 
 Valid values are INFO, ERROR.
+
+If you want to disable access logging completly you can do with the following:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    restApi:
+      accessLogging: true
+```
+
+By default, the full requests and responses data will be logged. If you want to disable like so:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    restApi:
+      fullExecutionData: false
+```
+
+Websockets have the same configuration options as the the REST API. Example:
+
+```yml
+# serverless.yml
+provider:
+  name: aws
+  logs:
+    websoocket:
+      level: INFO
+      fullExecutionData: false
+```

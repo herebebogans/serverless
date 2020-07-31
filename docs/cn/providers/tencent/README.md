@@ -1,6 +1,6 @@
 <!--
-title: Tencent Cloud - 腾讯云函数 (SCF) CLI 文档
-menuText: Tencent CLI
+title: Tencent Cloud - 腾讯 Serverless Framework
+menuText: 腾讯 Serverless Framework
 menuOrder: 3
 layout: Doc
 -->
@@ -11,28 +11,30 @@ layout: Doc
 
 <!-- DOCS-SITE-LINK:END -->
 
-# 腾讯云 CLI 文档
+# 腾讯云 Serverless Framework 文档
 
-**注意:** 使用前需要申请使用腾讯云密钥 [腾讯云访问密钥](https://console.cloud.tencent.com/cam/capi)
-
-<div class="docsSections">
   <div class="docsSection">
     <div class="docsSectionSubHeader">
-      <h4>CLI 文档导航</h4>
+      <h4>Components 文档导航</h4>
     </div>
     <div class="docsProviderItems">
       <ul>
-        <li><a href="./cli-reference/create.md">部署创建</a></li>
-        <li><a href="./cli-reference/install.md">快速安装</a></li>
-        <li><a href="./cli-reference/deploy.md">部署服务</a></li>
-        <li><a href="./cli-reference/deploy-function.md">部署函数</a></li>
-        <li><a href="./cli-reference/deploy-list.md">部署列表</a></li>
-        <li><a href="./cli-reference/invoke.md">云端调用</a></li>
-        <li><a href="./cli-reference/logs.md">日志查看</a></li>
-        <li><a href="./cli-reference/metrics.md">运行数据统计</a></li>
-        <li><a href="./cli-reference/info.md">信息获取</a></li>
-        <li><a href="./cli-reference/rollback.md">回滚服务</a></li>
-        <li><a href="./cli-reference/remove.md">删除服务</a></li>
+        <li><a href="./components/README.md">Components 概述</a></li>
+        <li><a href="./components/high-level-components/tencent-egg">Egg.js 组件</a></li>
+        <li><a href="./components/high-level-components/tencent-express">Express 组件</a></li>
+        <li><a href="./components/high-level-components/tencent-koa">Koa 组件</a></li>
+        <li><a href="./components/high-level-components/tencent-flask"> Python Flask 组件</a></li>
+        <li><a href="./components/high-level-components/tencent-laravel"> PHP Laravel 组件</a></li>
+        <li><a href="./components/high-level-components/tencent-react-full-stack">部署 React 全栈应用</a></li>
+        <li><a href="./components/high-level-components/tencent-vue-full-stack">部署 Vue 全栈应用</a></li>
+        <li><a href="./components/high-level-components/tencent-hexo">搭建 Hexo 博客</a></li>
+        <li><a href="./components/high-level-components/tencent-website">搭建静态网站</a></li>
+        <li><a href="./components/basic-components/tencent-scf">云函数 SCF 组件</a></li>
+        <li><a href="./components/basic-components/tencent-apigateway">API网关组件</a></li>
+        <li><a href="./components/basic-components/tencent-cos">对象存储 COS 组件</a></li>
+        <li><a href="./components/basic-components/tencent-cdn">内容分发网络 CDN 组件</a></li>
+        <li><a href="./components/basic-components/tencent-cam-policy">访问管理 CAM 策略组件</a></li>
+        <li><a href="./components/basic-components/tencent-cam-role">访问管理 CAM 角色组件</a></li>
       </ul>
     </div>
   </div>
